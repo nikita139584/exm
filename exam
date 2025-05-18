@@ -1,0 +1,259 @@
+#include <iostream>
+#include <windows.h>
+#include <conio.h>
+#include <ctime>
+using namespace std;
+//if (hero.X == WIDTH - 1 || hero.Y == HEIGHT) {
+enum GameObject : short { HALL, WALL, COIN, ENEMY, HEALTH, ENERGY, EXIT };
+enum Color : short {
+    BLACK, DARKBLUE, DARKGREEN, TURQUOISE, DARKRED,
+    PURPLE, DARKYELLOW, GREY, DARKGREY, BLUE, GREEN,
+    CYAN, RED, PINK, YELLOW, WHITE
+};
+enum Key : short {
+    LEFT = 75, RIGHT = 77, UP = 72, DOWN = 80,
+    ENTER = 13, SPACE = 32, ESCAPE = 27, BACKSPACE = 8
+};
+
+int main() {
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    srand(time(0));
+    system("title Bomberman");
+    const int HEIGHT = 25;
+    const int WIDTH = 65;
+    int map[HEIGHT][WIDTH] = {};
+    int health_count = 0;
+    int energy_collected = 50;
+    int walking = 0;
+    int coins_collected = 0;
+    int heart_collected = 3;
+    // Скрываем курсор
+    CONSOLE_CURSOR_INFO cursor;
+    cursor.bVisible = false;
+    cursor.dwSize = 100;
+    SetConsoleCursorInfo(h, &cursor);
+
+    // Инициализация героя
+    COORD hero;
+    hero.X = 0;
+    hero.Y = 2;
+
+    // Модель: генерация карты
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            map[y][x] = rand() % 6;
+
+            if (x == 0 || y == 0 || x == WIDTH - 1 || y == HEIGHT - 1)
+                map[y][x] = GameObject::WALL;
+
+            if (x == WIDTH - 1 && y == HEIGHT - 3 ||
+                x == WIDTH - 2 && y == HEIGHT - 3 ||
+                x == WIDTH - 3 && y == HEIGHT - 3)
+                map[y][x] = GameObject::EXIT;
+
+            if (x == 0 && y == 2 ||
+                x == 1 && y == 2 ||
+                x == 2 && y == 2 ||
+                x == WIDTH - 1 && y == HEIGHT - 3 ||
+                x == WIDTH - 2 && y == HEIGHT - 3 ||
+                x == WIDTH - 3 && y == HEIGHT - 3)
+                map[y][x] = GameObject::HALL;
+
+            if (map[y][x] == GameObject::ENEMY && rand() % 5 != 0)
+                map[y][x] = GameObject::HALL;
+
+            if (map[y][x] == GameObject::ENERGY) {
+                if (health_count >= 5 || rand() % 30 != 0)
+                    map[y][x] = GameObject::HALL;
+                else
+                    health_count++;
+            }
+            if (map[y][x] == GameObject::HEALTH) {
+                if (health_count >= 3 || rand() % 30 != 0)
+                    map[y][x] = GameObject::HALL;
+                else
+                    health_count++;
+            }
+        }
+    }
+
+
+
+
+    // Отображение карты
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
+            switch (map[y][x]) {
+            case GameObject::HALL:
+                SetConsoleTextAttribute(h, Color::BLACK);
+                cout << " ";
+                break;
+            case GameObject::WALL:
+                SetConsoleTextAttribute(h, Color::DARKGREEN);
+                cout << (char)219;
+                break;
+            case GameObject::COIN:
+                SetConsoleTextAttribute(h, Color::YELLOW);
+                cout << (char)248;
+                break;
+            case GameObject::ENEMY:
+                SetConsoleTextAttribute(h, Color::PURPLE);
+                cout << "O";
+                break;
+            case GameObject::ENERGY:
+                SetConsoleTextAttribute(h, Color::BLUE);
+                cout << "A";
+                break;
+            case GameObject::HEALTH:
+                SetConsoleTextAttribute(h, Color::RED);
+                cout << "#";
+                break;
+            }
+        }
+        cout << "\n";
+    }
+
+    // Отображение героя
+    SetConsoleCursorPosition(h, hero);
+    SetConsoleTextAttribute(h, Color::BLUE);
+    cout << "O";
+
+    // Информация о монетах
+    COORD coins_info;
+    coins_info.X = WIDTH + 1;
+    coins_info.Y = 0;
+    SetConsoleCursorPosition(h, coins_info);
+    SetConsoleTextAttribute(h, Color::DARKYELLOW);
+    cout << "COINS:";
+    SetConsoleTextAttribute(h, Color::YELLOW);
+    cout << coins_collected;
+
+    // Информация о сердцах
+    COORD heart_info;
+    heart_info.X = WIDTH + 1;
+    heart_info.Y = 1;
+    SetConsoleCursorPosition(h, heart_info);
+    SetConsoleTextAttribute(h, Color::DARKRED);
+    cout << "HEART:" << heart_collected;
+
+    COORD energy_info;
+    energy_info.X = WIDTH + 1;
+    energy_info.Y = 2;
+    SetConsoleCursorPosition(h, energy_info);
+    SetConsoleTextAttribute(h, Color::RED);
+    cout << "ENERGY:" << energy_collected;
+
+    // Игровой цикл
+    while (true) {
+        int code = _getch();
+        if (code == 224) code = _getch();
+
+        COORD old_position = hero;
+        bool has_been_moved = false;
+
+        switch (code) {
+        case Key::LEFT:
+            if (hero.X > 0 && map[hero.Y][hero.X - 1] != GameObject::WALL) {
+                hero.X--; has_been_moved = true;
+                walking++;
+                SetConsoleCursorPosition(h, energy_info);
+                SetConsoleTextAttribute(h, Color::RED);
+                cout << "ENERGY:" << --energy_collected << "   "; // "   " стирает предыдущие цифры
+            }
+            break;
+        case Key::RIGHT:
+            if (map[hero.Y][hero.X + 1] != GameObject::WALL) {
+                hero.X++; has_been_moved = true;
+                walking++;
+                SetConsoleCursorPosition(h, energy_info);
+                SetConsoleTextAttribute(h, Color::RED);
+                cout << "ENERGY:" << --energy_collected << "   "; // "   " стирает предыдущие цифры
+            }
+            break;
+        case Key::UP:
+            if (map[hero.Y - 1][hero.X] != GameObject::WALL) {
+                hero.Y--; has_been_moved = true;
+                walking++;
+                SetConsoleCursorPosition(h, energy_info);
+                SetConsoleTextAttribute(h, Color::RED);
+                cout << "ENERGY:" << --energy_collected << "   "; // "   " стирает предыдущие цифры
+            }
+            break;
+        case Key::DOWN:
+            if (map[hero.Y + 1][hero.X] != GameObject::WALL) {
+                hero.Y++; has_been_moved = true;
+                walking++;
+                SetConsoleCursorPosition(h, energy_info);
+                SetConsoleTextAttribute(h, Color::RED);
+                cout << "ENERGY:" << --energy_collected << "   "; // "   " стирает предыдущие цифры
+            }
+            break;
+        }
+
+        if (has_been_moved) {
+            SetConsoleCursorPosition(h, old_position);
+            SetConsoleTextAttribute(h, Color::BLACK);
+            cout << " ";
+            SetConsoleCursorPosition(h, hero);
+            SetConsoleTextAttribute(h, Color::BLUE);
+            cout << "O";
+        }
+
+        // Победа (правый нижний угол)
+
+        if (map[hero.Y][hero.X] == GameObject::EXIT) {
+            system("cls");
+            cout << "You win! You entered the exit!";
+            break;
+        }
+
+
+        // Взаимодействие с объектами
+        if (map[hero.Y][hero.X] == GameObject::COIN) {
+            coins_collected++;
+            map[hero.Y][hero.X] = GameObject::HALL;
+            SetConsoleCursorPosition(h, coins_info);
+            SetConsoleTextAttribute(h, Color::DARKYELLOW);
+            cout << "COINS:";
+            SetConsoleTextAttribute(h, Color::YELLOW);
+            cout << coins_collected;
+        }
+        if (map[hero.Y][hero.X] == GameObject::ENERGY) {
+            energy_collected += 51;
+            map[hero.Y][hero.X] = GameObject::HALL;
+            SetConsoleCursorPosition(h, energy_info);
+            SetConsoleTextAttribute(h, Color::RED);
+            cout << "ENERGY:";
+            SetConsoleTextAttribute(h, Color::RED);
+            cout << energy_collected;
+        }
+        if (map[hero.Y][hero.X] == GameObject::HEALTH) {
+            heart_collected++;
+            map[hero.Y][hero.X] = GameObject::HALL;
+            SetConsoleCursorPosition(h, heart_info);
+            SetConsoleTextAttribute(h, Color::RED);
+            cout << "HEART:" << heart_collected;
+        }
+        if (map[hero.Y][hero.X] == GameObject::ENEMY) {
+            heart_collected--;
+            map[hero.Y][hero.X] = GameObject::HALL;
+            SetConsoleCursorPosition(h, heart_info);
+            SetConsoleTextAttribute(h, Color::RED);
+            cout << "HEART:" << heart_collected;
+        }
+
+        // Поражение
+        if (heart_collected == 0) {
+            system("cls");
+            cout << "You have run out of lives. Next time, don't get too close to the enemies.";
+            break;
+        }
+        if (energy_collected == 0) {
+            system("cls");
+            cout << "Your character is tired and can no longer walk.";
+            break;
+        }
+    }
+    cout << "\n";
+    cout << "Your walk-" << walking << "m";
+}
