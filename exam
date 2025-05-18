@@ -4,7 +4,7 @@
 #include <ctime>
 using namespace std;
 //if (hero.X == WIDTH - 1 || hero.Y == HEIGHT) {
-enum GameObject : short { HALL, WALL, COIN, ENEMY, HEALTH, ENERGY, EXIT };
+enum GameObject : short { HALL, WALL, COIN, ENEMY, HEALTH, ENERGY,};
 enum Color : short {
     BLACK, DARKBLUE, DARKGREEN, TURQUOISE, DARKRED,
     PURPLE, DARKYELLOW, GREY, DARKGREY, BLUE, GREEN,
@@ -49,7 +49,7 @@ int main() {
             if (x == WIDTH - 1 && y == HEIGHT - 3 ||
                 x == WIDTH - 2 && y == HEIGHT - 3 ||
                 x == WIDTH - 3 && y == HEIGHT - 3)
-                map[y][x] = GameObject::EXIT;
+                map[y][x] = GameObject::HALL;
 
             if (x == 0 && y == 2 ||
                 x == 1 && y == 2 ||
@@ -201,9 +201,9 @@ int main() {
 
         // Победа (правый нижний угол)
 
-        if (map[hero.Y][hero.X] == GameObject::EXIT) {
+        if ((hero.X == WIDTH - 1) && hero.Y == HEIGHT - 3) {
             system("cls");
-            cout << "You win! You entered the exit!";
+            cout << "Your win";
             break;
         }
 
